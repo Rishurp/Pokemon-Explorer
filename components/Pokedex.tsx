@@ -3,19 +3,30 @@
 import { useState } from "react";
 import { trpc } from "../app/_trpc/client";
 import PokedexTable from "./PokedexTable";
+import {
+  Container,
+  Typography,
+  TextField,
+  Button,
+  Box,
+  CircularProgress,
+} from "@mui/material";
 
 const Pokedex = () => {
   const [pokemonNames, setPokemonNames] = useState<string[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [shouldFetch, setShouldFetch] = useState(false);
 
-  const { data: pokemonArray, refetch } = trpc.getPokemonArray.useQuery(
-    pokemonNames,
-    {
-      enabled: shouldFetch,
-      onSuccess: () => setShouldFetch(false),
-    }
-  );
+  const {
+    data: pokemonArray,
+    refetch,
+    isFetching,
+    isInitialLoading,
+    isLoading,
+  } = trpc.getPokemonArray.useQuery(pokemonNames, {
+    enabled: shouldFetch,
+    onSuccess: () => setShouldFetch(false),
+  });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);
@@ -30,26 +41,60 @@ const Pokedex = () => {
   };
 
   return (
-    <div>
-      <p className="text-center text-2xl font-bold mt-4">Pokedex</p>
-      <form className="text-center my-8 text-white" onSubmit={handleSubmit}>
-        <label className="text-xl" htmlFor="pokemonNames">
-          Enter Pokémon Names (comma-separated):{" "}
-        </label>
-        <input
-          className="bg-slate-800 py-1 rounded-md px-2"
-          id="pokemonNames"
-          type="text"
-          value={inputValue}
-          onChange={handleInputChange}
-        />
-        <button type="submit" className="ml-2 px-4 py-1 bg-blue-600 rounded">
-          Fetch Pokémon
-        </button>
+    <Container maxWidth="md" sx={{ textAlign: "center", mt: 4 }}>
+      <Typography variant="h4" color="textSecondary" fontWeight="bold">
+        Pokémon Explorer
+      </Typography>
+
+      <Typography variant="h6" color="primary" fontWeight="semibold" mt={2}>
+        Discover detailed information about multiple Pokémon. For instance, you
+        can type <span className="font-bold">Pikachu, Bulbasaur</span> to view
+        their details.
+      </Typography>
+
+      <form onSubmit={handleSubmit}>
+        <Box
+          display="flex"
+          flexDirection={{ xs: "column", md: "row" }}
+          alignItems="center"
+          justifyContent="center"
+          my={4}
+        >
+          <TextField
+            id="pokemonNames"
+            label="Enter Pokémon Names (comma-separated)"
+            variant="outlined"
+            value={inputValue}
+            onChange={handleInputChange}
+            sx={{ flex: 1, mr: { md: 2 }, mb: { xs: 2, md: 0 } }}
+          />
+          <Button type="submit" variant="contained" color="primary">
+            Get Pokémon
+          </Button>
+        </Box>
       </form>
 
-      {pokemonArray && <PokedexTable pokemonArray={pokemonArray} />}
-    </div>
+      {(isFetching || isInitialLoading) && (
+        <Box display="flex" justifyContent="center" alignItems="center" mt={4}>
+          <CircularProgress />
+        </Box>
+      )}
+
+      {pokemonArray && pokemonArray.length > 0 ? (
+        <Box px={2}>
+          <PokedexTable pokemonArray={pokemonArray} />
+        </Box>
+      ) : (
+        !isInitialLoading &&
+        !isLoading && (
+          <Box px={2} textAlign="center" mt={4}>
+            <Typography variant="h6" color="error">
+              No Pokémon Found
+            </Typography>
+          </Box>
+        )
+      )}
+    </Container>
   );
 };
 
